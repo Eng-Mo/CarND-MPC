@@ -141,12 +141,12 @@ int main() {
 		   double npsi = 0;
 		   double Lf = 2.67;
 
-		   x += v * cos(npsi) * latency;
-		 y += v * sin(npsi) * latency; // sin(npsi) = sin(0) = 0
-		 npsi += v * delta * latency / Lf;
-		 v += a * latency;
-		 cte += v * sin(epsi) * latency;
-		 epsi += v * delta * latency / Lf;
+//		   x += v * cos(npsi) * latency;
+//		 y += v * sin(npsi) * latency; // sin(npsi) = sin(0) = 0
+//		 npsi += v * delta * latency / Lf;
+//		 v += a * latency;
+//		 cte += v * sin(epsi) * latency;
+//		 epsi += v * delta * latency / Lf;
 
 
            state<<x,y,npsi,v,cte,epsi;
