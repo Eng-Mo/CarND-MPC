@@ -1,3 +1,4 @@
+
 # Model Predictive Control
 ---
 This project is an implementation of a non linear Model predictive controller for driving a self driving car around track in simulator. The simulator feed the system with stream data that contain car position, velocity and orientation and also the way-points of the trajectory reference that the car should to follow. The control system is designed based on car Kinematic model that ignore that ignore tire forces, gravity, and mass.
