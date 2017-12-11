@@ -130,7 +130,7 @@ int main() {
           Eigen::Map<Eigen::VectorXd> ptsy_transform(ptr_y, ptsy.size());
 
           auto coeffs= polyfit(ptsx_transform,ptsy_transform,3);
-//          cout<<"coeffetions= "<<coeffs<<endl;
+
           // TODO: calculate the cross track error
            double cte = polyeval(coeffs,0);
            // TODO: calculate the orientation error
@@ -143,12 +143,14 @@ int main() {
 
 		   //I am not sure about latency integration
 
+
 		   x += v * cos(npsi) * latency;
 		   y += v * sin(npsi) * latency; // sin(npsi) = sin(0) = 0
-//		   npsi += v * delta * latency / Lf;
-		   v += a * latency;
+		   npsi += v  *-1*delta * latency / Lf;
+
 		   cte += v * sin(epsi) * latency;
-		   epsi += v * delta * latency / Lf;
+		   epsi += v *-1*delta * latency / Lf;
+		   v += a * latency;
 
 
            state<<x,y,npsi,v,cte,epsi;

@@ -47,22 +47,22 @@ class FG_eval {
     // the Solver function below.
 	  fg[0]=0;
 	  for (int t; t<N; t++){
-		  fg[0]+=3000*CppAD::pow(vars[cte_start+t]-ref_cte,2);
-		  fg[0]+=3000*CppAD::pow(vars[epsi_start+t]-ref_epsi,2);
+		  fg[0]+=3*CppAD::pow(vars[cte_start+t]-ref_cte,2);
+		  fg[0]+=3*CppAD::pow(vars[epsi_start+t]-ref_epsi,2);
 		  fg[0]+= CppAD::pow(vars[v_start+t]-ref_v,2);
 	  }
 
 
 	  for (int t; t<N-1; t++){
 		  fg[0]+=3000*CppAD::pow(vars[delta_start+t],2);
-		  fg[0]+=300*CppAD::pow(vars[a_start+t],2);
+		  fg[0]+=200*CppAD::pow(vars[a_start+t],2);
 
 	  }
 
 
 	  for (int t; t<N-2; t++){
 	      	fg[0]+=3000*CppAD::pow(vars[delta_start+t+1]-vars[delta_start+t],2);
-	      	fg[0]+=300*CppAD::pow(vars[a_start+t+1]-vars[a_start+t],2);
+	      	fg[0]+=200*CppAD::pow(vars[a_start+t+1]-vars[a_start+t],2);
 
 	  }
 
@@ -108,7 +108,7 @@ class FG_eval {
 
 
 		  fg[1 + cte_start + t] =cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
-		  fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+		  fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 *-1*delta0 / Lf * dt);
 
 	  }
 
