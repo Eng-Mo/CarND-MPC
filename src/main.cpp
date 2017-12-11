@@ -141,17 +141,17 @@ int main() {
 		   double npsi = 0;
 		   double Lf = 2.67;
 
-//		   x += v * cos(npsi) * latency;
-//		 y += v * sin(npsi) * latency; // sin(npsi) = sin(0) = 0
-//		 npsi += v * delta * latency / Lf;
-//		 v += a * latency;
-//		 cte += v * sin(epsi) * latency;
-//		 epsi += v * delta * latency / Lf;
+		   //I am not sure about latency integration
+
+		   x += v * cos(npsi) * latency;
+		   y += v * sin(npsi) * latency; // sin(npsi) = sin(0) = 0
+//		   npsi += v * delta * latency / Lf;
+		   v += a * latency;
+		   cte += v * sin(epsi) * latency;
+		   epsi += v * delta * latency / Lf;
 
 
            state<<x,y,npsi,v,cte,epsi;
-//           cout<<"done******************"<<endl;
-
            auto vars=mpc.Solve(state,coeffs);
 
 
@@ -161,9 +161,6 @@ int main() {
           double throttle_value;
           steer_value=vars[0];
           throttle_value=vars[1];
-
-//          cout<<"steering= "<<vars[0]<<endl;
-//          cout<<"throttle= "<<vars[1]<<endl;
 
 
           json msgJson;
@@ -183,8 +180,8 @@ int main() {
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
 
-          msgJson["mpc_x"] = mpc.mpc_x_val;
-          msgJson["mpc_y"] = mpc.mpc_y_val;
+          msgJson["mpc_x"] = mpc.mpc_x_vals;
+          msgJson["mpc_y"] = mpc.mpc_y_vals;
 
           //Display the waypoints/reference line
           vector<double> next_x_vals;
@@ -200,10 +197,7 @@ int main() {
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
-//          for(int p=0; p<ptsx_transform.size();p++){
-//        	  next_x_vals.push_back(ptsx_transform[p]);
-//        	  next_y_vals.push_back(ptsy_transform[p]);
-//          }
+
 
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;

@@ -1,7 +1,122 @@
-# CarND-Controls-MPC
-Self-Driving Car Engineer Nanodegree Program
-
+# Model Predictive Control
 ---
+This project is an implementation of a non linear Model predictive controller for driving a self driving car around track in simulator. The simulator feed the system with stream data that contain car position, velocity and orientation and also the way-points of the trajectory reference that the car should to follow. The control system is designed based on car Kinematic model that ignore that ignore tire forces, gravity, and mass.
+
+## Car state
+```
+state<<x,y,psi,v,cte,epsi;
+```
+
+x: position x <br />
+y:position y <br />
+psi: car orientation <br />
+v: velocity <br />
+cte: cross track error <br />
+epsi: orientation error <br />
+## control input
+
+```
+solution.x[delta_start],   solution.x[a_start]
+```
+
+delta_start: steering angle
+a_start: throttle/break
+
+## Transform from map coordinates to car coordinate (Global Kinematic model)
+
+The simulator provides the car and the trajectory reference coordinates in global coordinate system and the transformation form global to local as below.
+
+```
+
+for (int p=0; p<ptsx.size(); p++){
+
+        	  double shift_x= ptsx[p]-px;
+        	  double shift_y= ptsy[p]-py;
+        	  ptsx_vehicle.push_back(shift_x*cos(-psi)-shift_y*sin(-psi));
+        	 ptsy_vehicle.push_back(shift_x*sin(-psi)+shift_y*cos(-psi)) ;
+
+          }
+          
+```
+## Vehicle model
+ kinematic bicycle model is used for this project as it handle the non linearity of the heading change over time and the model used the following equations.
+```
+fg[1+x_start+t]= x1-(x0+v0*CppAD::cos(psi0)*dt);
+		  fg[1+y_start+t]= y1-(y0+v0*CppAD::sin(psi0)*dt);
+		  fg[1+psi_start+t]= psi1-(psi0-v0*delta0*dt/Lf);
+		  fg[1+v_start+t]=v1-(v0+a0*dt);
+
+
+		  fg[1 + cte_start + t] =cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
+		  fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
+          ```
+
+## Following trajectory
+The reference trajectory is typically passed to the control block as a polynomial. This polynomial is usually 3rd order, since third order polynomials will fit trajectories for most roads. To practice this most common situation, we will learn how to fit 3rd order polynomials to waypoints (x, y). I Used polyfit to fit a 3rd order polynomial to the given x and y coordinates representing waypoints.
+
+```
+          double* ptr_x=&ptsx_vehicle[0];
+          double* ptr_y= &ptsy_vehicle[0];
+          Eigen::Map<Eigen::VectorXd> ptsx_transform(ptr_x, ptsx.size());
+          Eigen::Map<Eigen::VectorXd> ptsy_transform(ptr_y, ptsy.size());
+          auto coeffs= polyfit(ptsx_transform,ptsy_transform,3);
+          double cte = polyeval(coeffs,0);
+          double epsi = -atan(coeffs[1]) ;
+```
+
+## Constraints. 
+
+here I defined the lower and upper limits constrains. the steering angle should minimize the `cte` and `psi` to zero. Also, I set the upper and lower steering values to -25 to 25 radiance. the actuator constrains defined by assuming throttle and break pedals one input control from -1 to 1 so that -1 is full break and 1 is to speed.
+
+```
+// Lower and upper limits for the constraints
+  // Should be 0 besides initial state.
+  for( i=0;i<delta_start;i++){
+        vars_lowerbound[i] = -1.0e19;
+        vars_upperbound[i] = 1.0e19;
+    }
+  for ( i = delta_start; i < a_start; i++) {
+      vars_lowerbound[i] = -0.436332;
+      vars_upperbound[i] = 0.436332;
+    }
+
+    // Acceleration/decceleration upper and lower limits.
+    // NOTE: Feel free to change this to something else.
+    for ( i = a_start; i < n_vars; i++) {
+      vars_lowerbound[i] = -1.0;
+      vars_upperbound[i] = 1.0;
+    }
+    ```
+by knowing the current state of the car and reference trajectory we optimize the input control at each step in order to minimize the cost of the predicted trajectory. In order to minimise the associated cost of maintaining  the trajectory with average speed I tuned the cost functions as below to ban the vehicle to oscillate. 
+
+```
+  fg[0]=0;
+	  for (int t; t<N; t++){
+		  fg[0]+=3000*CppAD::pow(vars[cte_start+t] -ref_cte,2);
+		  fg[0]+=3000*CppAD::pow(vars[epsi_start+t] -ref_epsi,2);
+		  fg[0]+= CppAD::pow(vars[v_start+t]-ref_v,2);
+	  }
+
+
+	  for (int t; t<N-1; t++){
+		  fg[0]+=3000*CppAD::pow(vars[delta_start+t],2);
+		  fg[0]+=300*CppAD::pow(vars[a_start+t],2);
+
+	  }
+
+
+	  for (int t; t<N-2; t++){
+	      	fg[0]+=3000*CppAD::pow(vars[delta_start+t+1]-vars[delta_start+t],2);
+	      	fg[0]+=300*CppAD::pow(vars[a_start+t+1]-vars[a_start+t],2);
+
+	  }
+      ```
+## MPC Tuning
+prediction horizon `N=10,dt=.15` are tuned so that make the vehicle keep the trajectory in reasonable future prediction duration `T=1.5 sec`. by decreasing the `dt` the car make high osculation either in low or high speed. the used values make the car drive conservatively in average speed. 
+
+## Dealing with Latency
+Latency of 0.1 between MPC loop and the actual actuation is considered by making the car drive more wisely by increased the penalty of the velocity and steering angle
+
 
 ## Dependencies
 
@@ -38,71 +153,10 @@ Self-Driving Car Engineer Nanodegree Program
 3. Compile: `cmake .. && make`
 4. Run it: `./mpc`.
 
-## Tips
 
-1. It's recommended to test the MPC on basic examples to see if your implementation behaves as desired. One possible example
-is the vehicle starting offset of a straight line (reference). If the MPC implementation is correct, after some number of timesteps
-(not too many) it should find and track the reference line.
-2. The `lake_track_waypoints.csv` file has the waypoints of the lake track. You could use this to fit polynomials and points and see of how well your model tracks curve. NOTE: This file might be not completely in sync with the simulator so your solution should NOT depend on it.
-3. For visualization this C++ [matplotlib wrapper](https://github.com/lava/matplotlib-cpp) could be helpful.)
-4.  Tips for setting up your environment are available [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
-5. **VM Latency:** Some students have reported differences in behavior using VM's ostensibly a result of latency.  Please let us know if issues arise as a result of a VM environment.
 
-## Editor Settings
 
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
+ 
+    
 
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
 
-## Code Style
-
-Please (do your best to) stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html).
-
-## Project Instructions and Rubric
-
-Note: regardless of the changes you make, your project must be buildable using
-cmake and make!
-
-More information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/f1820894-8322-4bb3-81aa-b26b3c6dcbaf/lessons/b1ff3be0-c904-438e-aad3-2b5379f0e0c3/concepts/1a2255a0-e23c-44cf-8d41-39b8a3c8264a)
-for instructions and the project rubric.
-
-## Hints!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! I'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Frankly, I've never been involved in a project with multiple IDE profiles
-before. I believe the best way to handle this would be to keep them out of the
-repo root to avoid clutter. My expectation is that most profiles will include
-instructions to copy files to a new location to get picked up by the IDE, but
-that's just a guess.
-
-One last note here: regardless of the IDE used, every submitted project must
-still be compilable with cmake and make./
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).

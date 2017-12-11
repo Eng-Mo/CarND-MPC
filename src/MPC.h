@@ -20,9 +20,8 @@ struct state_vector{
 class MPC {
  public:
 	state_vector state_data;
-	//actuator_vector contral_data;
-	vector<double> mpc_x_val;
-	vector<double> mpc_y_val;
+	vector<double> mpc_x_vals;
+	vector<double> mpc_y_vals;
 
 	 double delta_prev {0};
 	 double a_prev {0.1};
