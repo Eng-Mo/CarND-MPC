@@ -41,6 +41,7 @@ for (int p=0; p<ptsx.size(); p++){
 ```
 ## Vehicle model
  kinematic bicycle model is used for this project as it handle the non linearity of the heading change over time and the model used the following equations.
+ 
 ```
 fg[1+x_start+t]= x1-(x0+v0*CppAD::cos(psi0)*dt);
 		  fg[1+y_start+t]= y1-(y0+v0*CppAD::sin(psi0)*dt);
@@ -50,7 +51,7 @@ fg[1+x_start+t]= x1-(x0+v0*CppAD::cos(psi0)*dt);
 
 		  fg[1 + cte_start + t] =cte1 - ((f0 - y0) + (v0 * CppAD::sin(epsi0) * dt));
 		  fg[1 + epsi_start + t] = epsi1 - ((psi0 - psides0) + v0 * delta0 / Lf * dt);
-          ```
+```
 
 ## Following trajectory
 The reference trajectory is typically passed to the control block as a polynomial. This polynomial is usually 3rd order, since third order polynomials will fit trajectories for most roads. To practice this most common situation, we will learn how to fit 3rd order polynomials to waypoints (x, y). I Used polyfit to fit a 3rd order polynomial to the given x and y coordinates representing waypoints.
@@ -65,7 +66,7 @@ The reference trajectory is typically passed to the control block as a polynomia
           double epsi = -atan(coeffs[1]) ;
 ```
 
-## Constraints. 
+## Constraints
 
 here I defined the lower and upper limits constrains. the steering angle should minimize the `cte` and `psi` to zero. Also, I set the upper and lower steering values to -25 to 25 radiance. the actuator constrains defined by assuming throttle and break pedals one input control from -1 to 1 so that -1 is full break and 1 is to speed.
 
@@ -87,7 +88,7 @@ here I defined the lower and upper limits constrains. the steering angle should 
       vars_lowerbound[i] = -1.0;
       vars_upperbound[i] = 1.0;
     }
-    ```
+```
 by knowing the current state of the car and reference trajectory we optimize the input control at each step in order to minimize the cost of the predicted trajectory. In order to minimise the associated cost of maintaining  the trajectory with average speed I tuned the cost functions as below to ban the vehicle to oscillate. 
 
 ```
@@ -111,13 +112,13 @@ by knowing the current state of the car and reference trajectory we optimize the
 	      	fg[0]+=300*CppAD::pow(vars[a_start+t+1]-vars[a_start+t],2);
 
 	  }
- ```
- 
+```
 ## MPC Tuning
 prediction horizon `N=10,dt=.15` are tuned so that make the vehicle keep the trajectory in reasonable future prediction duration `T=1.5 sec`. by decreasing the `dt` the car make high osculation either in low or high speed. the used values make the car drive conservatively in average speed. 
 
 ## Dealing with Latency
-Latency of 0.1 between MPC loop and the actual actuation is considered by making the car drive more wisely by increased the penalty of the velocity and steering angle.
+Latency of 0.1 between MPC loop and the actual actuation is considered by making the car drive more wisely by increased the penalty of the velocity and steering angle
+
 
 ## Dependencies
 
