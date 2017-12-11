@@ -111,13 +111,13 @@ by knowing the current state of the car and reference trajectory we optimize the
 	      	fg[0]+=300*CppAD::pow(vars[a_start+t+1]-vars[a_start+t],2);
 
 	  }
-      ```
+ ```
+ 
 ## MPC Tuning
 prediction horizon `N=10,dt=.15` are tuned so that make the vehicle keep the trajectory in reasonable future prediction duration `T=1.5 sec`. by decreasing the `dt` the car make high osculation either in low or high speed. the used values make the car drive conservatively in average speed. 
 
 ## Dealing with Latency
-Latency of 0.1 between MPC loop and the actual actuation is considered by making the car drive more wisely by increased the penalty of the velocity and steering angle
-
+Latency of 0.1 between MPC loop and the actual actuation is considered by making the car drive more wisely by increased the penalty of the velocity and steering angle.
 
 ## Dependencies
 
